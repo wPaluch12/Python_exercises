@@ -1,0 +1,48 @@
+import re
+from collections import defaultdict
+
+WORD_RE = re.compile(r'\w+|[-.,?!]')
+
+
+
+
+def find_tokens_in_txt(filename, show): 
+    with open(filename, encoding='utf-8') as infile:
+        word_counts = defaultdict(int)
+        words_number = 0
+        for line in infile:
+            line = line.lower()
+            for token in WORD_RE.findall(line):
+                if token not in ["-", ":", ",", "!", ".", ";", "?", "(", ")"]:
+                    words_number += 1
+                    if token in word_counts:
+                        word_counts[token] += 1
+                    else:
+                        word_counts[token] = 1
+        i = 0
+        old = 'l'
+        for t in sorted(word_counts, key=word_counts.get, reverse=True):
+            if i < show:
+                if word_counts[t] != old:
+                    i += 2
+                yield [t, word_counts[t]]
+                i -= 1
+            old = word_counts[t]
+        yield "Overall: " + str(words_number)
+
+
+def count_words(text):
+
+    word_counts = {}
+    for word in text.split(" "):
+        if word in word_counts:
+            word_counts[word] += 1
+        else:
+            word_counts[word] = 1
+    return word_counts
+
+
+if __name__ == '__main__':
+    tokens = find_tokens_in_txt(r"potop.txt", 30)
+    for tok in tokens:
+        print(tok)
