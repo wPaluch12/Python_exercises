@@ -1,0 +1,185 @@
+#assumptions: straight, directed graphs, exclude the existence of multiple loops and edges
+
+from collections import deque
+
+
+class Edge:
+
+    def __init__(self, from_node, to_node):
+        self.from_node = from_node
+        self.to_node = to_node
+
+    def __repr__(self):
+        return "Krawędź({},{})".format(repr(self.from_node), repr(self.to_node))
+
+
+class BFS:
+
+    def __init__(self, graph, root):
+        self.graph = graph
+        self.root = root
+
+    def __iter__(self):
+        self.visit = self.root
+        self.visited = []
+        self.to_visit = deque()
+        self.to_visit.append(self.visit)
+        return self
+
+    def __next__(self):
+        if self.to_visit:
+            continue_the_loop = True  
+            while continue_the_loop:
+                if self.to_visit:
+                    self.visit = self.to_visit[0]
+                else:
+                    raise StopIteration
+                for next_node in self.graph._edges[self.visit]:
+                    self.to_visit.append(next_node)
+                self.to_visit.popleft()
+                if self.visit not in self.visited:
+                    self.visited.append(self.visit)
+                    continue_the_loop = False
+            return self.visit
+        else:
+            raise StopIteration
+
+
+class DFS:
+
+    def __init__(self, graph, root):
+        self.graph = graph
+        self.root = root
+
+    def __iter__(self):
+        self.visit = self.root
+        self.visited = []
+        self.to_visit = deque()
+        self.to_visit.append(self.visit)
+        self.test = deque()
+        return self
+
+    def __next__(self):
+        if self.to_visit:
+            continue_the_loop = True
+            while continue_the_loop:
+                if self.to_visit:
+                    self.visit = self.to_visit[0]
+                    self.to_visit.popleft()
+                else:
+                    raise StopIteration
+                for next_node in self.graph._edges[self.visit]:
+                    self.test.append(next_node)
+                    self.to_visit.appendleft(self.test.popleft())
+                    for n in self.test:
+                        self.to_visit.append(n)
+                if self.visit not in self.visited:
+                    self.visited.append(self.visit)
+                    continue_the_loop = False
+            return self.visit
+        else:
+            raise StopIteration
+
+
+class Graph:
+
+    def __init__(self):
+        self._edges = {}
+        self._nodes = {}
+
+    def add_node(self, node):
+        if node not in self._nodes:
+            self._nodes[node] = {}
+
+    def add_edge(self, edge):
+        #if the given vertices do not exist in the list, they should be added to preserve the integrity of both arrays
+        if edge.from_node not in self._nodes:
+            self._nodes[edge.from_node] = {}    
+        if edge.to_node not in self._nodes:
+            self._nodes[edge.to_node] = {}
+        if edge.to_node == edge.from_node: #you cannot trace the edge that connects the vertex to itself.
+            raise ValueError("The from and to nodes are the same")
+
+        # properly adding edges to the edge dictionary
+        if edge.from_node not in self._edges:
+            self._edges[edge.from_node] = {}
+        if edge.to_node not in self._edges:
+            self._edges[edge.to_node] = {}
+        if edge.from_node not in self._edges[edge.to_node]: # A simple graph may contain at most one edge connecting two given vertices.
+            if edge.to_node not in self._edges[edge.from_node]:
+                self._edges[edge.from_node][edge.to_node] = {}
+
+    def del_edge(self, edge):
+        if edge.from_node in self._edges:
+            if edge.to_node in self._edges[edge.from_node]:
+                del self._edges[edge.from_node][edge.to_node]
+
+    def find_neighbours(self, node):
+        neighbours = []
+        for mate in self._edges[node]:
+            neighbours.append(mate)
+        for n in self._edges:
+            if not n == node:
+                for k in self._edges[n]:
+                    if k == node:
+                        neighbours.append(n)
+
+        return neighbours
+
+    def del_node(self, node):
+        neighbours = self.find_neighbours(node)
+        for n in neighbours:
+            self.del_edge(Edge(n, node))
+        del self._nodes[node]
+        del self._edges[node]
+
+    def bfs(self, root):
+        return BFS(self, root)
+
+    def dfs(self, root):
+        return DFS(self, root)
+
+    def __repr__(self):
+        return repr(self._edges)+"\n"+repr(self._nodes)
+
+
+
+if __name__ == '__main__':
+    k1 = Edge("A", "B")
+    #k2 = Edge("A", "C")
+    k3 = Edge("B", "C")
+    #k4 = Edge("B", "D")
+    k5 = Edge("C", "D")
+    #k6 = Edge("D", "C")
+    k7 = Edge("E", "F")
+    k8 = Edge("F", "C")
+    k9 = Edge("B", "E")
+
+    print(k1)
+    graf = Graph()
+    #graf.add_node("A")
+    #graf.add_node("B")
+    #graf.add_node("B")
+    #graf.add_node("D")
+    #graf.add_node("E")
+    graf.add_edge(k1)
+    #graf.add_edge(k2)
+    graf.add_edge(k3)
+    #graf.add_edge(k4)
+    graf.add_edge(k5)
+    #graf.add_edge(k6)
+    graf.add_edge(k7)
+    graf.add_edge(k8)
+    graf.add_edge(k9)
+
+    print(graf)
+    print(graf.find_neighbours("C"))
+    #graf.del_node("C")
+
+    print("Search dfs")
+    for vertex in graf.dfs("A"):
+        print(vertex)
+
+    print("Search bfs")
+    for vertex in graf.bfs("A"):
+        print(vertex)
